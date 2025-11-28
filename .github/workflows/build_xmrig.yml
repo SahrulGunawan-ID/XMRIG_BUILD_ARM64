@@ -14,29 +14,34 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Set up QEMU for ARM64
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
           platforms: arm64
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build XMRig in Docker (ARM64 Static)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/arm64
-          build-args: |
-            CMAKE_BUILD_TYPE=Release
-          run-context: |
-            mkdir -p build && cd build && \
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_HWLOC=ON -DWITH_STATIC_LIBS=ON && \
-            make -j$(nproc)
-          outputs: type=local,dest=./output
-
-      - name: Upload XMRig ARM64 Binary
+      - name: Build XMRig Static ARM64 in Docker
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v ${{ github.workspace }}:/xmrig \
+            -w /xmrig \
+            arm64v8/ubuntu:22.04 /bin/bash -c "\
+              apt update && \
+              apt install -y git build-essential cmake automake libtool autoconf \
+                libssl-dev libhwloc-dev libuv1-dev curl && \
+              mkdir -p build && cd build && \
+              cmake .. \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DWITH_HWLOC=ON \
+                -DWITH_OPENCL=OFF \
+                -DWITH_CUDA=OFF \
+                -DWITH_HTTP=OFF \
+                -DWITH_TLS=OFF \
+                -DWITH_STATIC_LIBS=ON \
+                -DCMAKE_EXE_LINKER_FLAGS='-static' && \
+              make -j$(nproc)"
+              
+      - name: Upload XMRig ARM64 Static Binary
         uses: actions/upload-artifact@v4
         with:
           name: xmrig-arm64-static
-          path: ./output/xmrig
+          path: build/xmrig

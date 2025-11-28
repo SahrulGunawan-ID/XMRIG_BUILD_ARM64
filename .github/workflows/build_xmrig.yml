@@ -11,8 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+      - name: Clone XMRig source
+        run: |
+          git clone https://github.com/xmrig/xmrig.git xmrig
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -22,7 +23,7 @@ jobs:
       - name: Build XMRig Static ARM64 in Docker
         run: |
           docker run --rm --platform linux/arm64 \
-            -v ${{ github.workspace }}:/xmrig \
+            -v ${{ github.workspace }}/xmrig:/xmrig \
             -w /xmrig \
             arm64v8/ubuntu:22.04 /bin/bash -c "\
               apt update && \
@@ -39,9 +40,9 @@ jobs:
                 -DWITH_STATIC_LIBS=ON \
                 -DCMAKE_EXE_LINKER_FLAGS='-static' && \
               make -j$(nproc)"
-              
+
       - name: Upload XMRig ARM64 Static Binary
         uses: actions/upload-artifact@v4
         with:
           name: xmrig-arm64-static
-          path: build/xmrig
+          path: xmrig/build/xmrig

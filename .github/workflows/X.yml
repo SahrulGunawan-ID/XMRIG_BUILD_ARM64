@@ -1,4 +1,4 @@
-name: Build Fully Static XMRig ARM64
+name: Build XMRig ARM64
 
 on:
   push:
